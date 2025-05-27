@@ -13,10 +13,10 @@ interface Aluno {
 }
 
 const dbConfig = {
-  host: "serverdbp2.mysql.database.azure.com",
-  user: "useradmin",
-  password: "admin@123",
-  database: "db_luiz_gustavo",
+  host: process.env.db_host,
+  user: process.env.db_user,
+  password: process.env.db_password,
+  database: process.env.database,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
