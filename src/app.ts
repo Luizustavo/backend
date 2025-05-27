@@ -1,11 +1,9 @@
-// Arquivo: src/app.ts
 import express, { Request, Response, NextFunction } from "express";
 import { createPool, Pool } from "mysql2/promise";
 import bcrypt from "bcrypt";
 import { body, validationResult, ValidationChain } from "express-validator";
 import cors from "cors";
 
-// Interface para tipagem dos dados do aluno
 interface Aluno {
   nome_completo: string;
   usuario_acesso: string;
@@ -14,7 +12,6 @@ interface Aluno {
   observacao?: string;
 }
 
-// Configuração do banco de dados
 const dbConfig = {
   host: "serverdbp2.mysql.database.azure.com",
   user: "useradmin",
@@ -25,18 +22,14 @@ const dbConfig = {
   queueLimit: 0,
 };
 
-// Criação do pool de conexões
 const pool: Pool = createPool(dbConfig);
 
-// Configuração do Express
 const app = express();
 const port = process.env.PORT || 3005;
 
-// Middlewares
 app.use(express.json());
 app.use(cors());
 
-// Validação dos dados de entrada
 const validateAlunoData: ValidationChain[] = [
   body("nome_completo")
     .isLength({ min: 5, max: 100 })
@@ -46,9 +39,15 @@ const validateAlunoData: ValidationChain[] = [
     .withMessage("Usuário deve ter entre 3 e 50 caracteres"),
   body("senha")
     .isStrongPassword({
-      minLength: 6,
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
     })
-    .withMessage("Senha deve conter pelo menos 6 caracteres"),
+    .withMessage(
+      "Senha deve conter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e símbolos"
+    ),
   body("email_aluno")
     .isEmail()
     .withMessage("E-mail inválido")
@@ -56,7 +55,6 @@ const validateAlunoData: ValidationChain[] = [
   body("observacao").optional().isLength({ max: 255 }),
 ];
 
-// Middleware de tratamento de erros de validação
 const validateRequest: express.RequestHandler = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -66,7 +64,6 @@ const validateRequest: express.RequestHandler = (req, res, next) => {
   next();
 };
 
-// Endpoint para cadastro de alunos
 function asyncHandler(
   fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
 ): express.RequestHandler {
@@ -82,7 +79,6 @@ app.post(
   asyncHandler(async (req: Request, res: Response) => {
     const alunoData: Aluno = req.body;
 
-    // Verifica se usuário ou e-mail já existem
     const connection = await pool.getConnection();
 
     const [existingUser] = await connection.query(
@@ -98,11 +94,9 @@ app.post(
       return;
     }
 
-    // Hash da senha
     const saltRounds = 10;
     const senhaHash = await bcrypt.hash(alunoData.senha, saltRounds);
 
-    // Inserção no banco de dados
     const [result] = await connection.query(
       `INSERT INTO alunos 
     (nome_completo, usuario_acesso, senha_hash, email_aluno, observacao) 
@@ -126,7 +120,6 @@ app.post(
   })
 );
 
-// Middleware de tratamento de erros global
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ error: "Erro interno no servidor" });
