@@ -13,10 +13,10 @@ interface Aluno {
 }
 
 const dbConfig = {
-  host: process.env.db_host,
-  user: process.env.db_user,
-  password: process.env.db_password,
-  database: process.env.database,
+  host: "serverdbp2.mysql.database.azure.com",
+  user: "useradmin",
+  password: "admin@123",
+  database: "db_luiz_gustavo",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -119,6 +119,30 @@ app.post(
     });
   })
 );
+
+app.get('/api/alunos', async (req: Request, res: Response) => {
+  try {
+    const connection = await pool.getConnection();
+    
+    const [alunos] = await connection.query(
+      'SELECT id_aluno, nome_completo, usuario_acesso, email_aluno, observacao, data_cadastro FROM alunos'
+    );
+
+    connection.release();
+
+    res.status(200).json({
+      success: true,
+      data: alunos
+    });
+
+  } catch (error) {
+    console.error('Erro na listagem:', error);
+    res.status(500).json({
+      error: 'Erro interno no servidor',
+      details: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
